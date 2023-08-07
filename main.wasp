@@ -1,0 +1,116 @@
+app ChatCSV {
+  wasp: {
+    version: "^0.11.1"
+  },
+  title: "ChatCSV",
+  client: {
+    rootComponent: import { Layout } from "@client/Layout.jsx"
+  },
+  db: {
+    prisma: {
+      clientPreviewFeatures: ["extendedWhereUnique"]
+    }
+  },
+  auth: {
+    userEntity: User,
+    methods: {
+      usernameAndPassword: {}
+    },
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/"
+  }
+}
+
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import Login from "@client/pages/auth/Login.jsx"
+}
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import Signup from "@client/pages/auth/Signup.jsx"
+}
+
+entity User {=psl
+    id       Int    @id @default(autoincrement())
+    username String @unique
+    password String
+    files    File[]
+psl=}
+
+entity File {=psl
+    id          Int        @id @default(autoincrement())
+    description String
+    content     String
+    user        User       @relation(fields: [userId], references: [id])
+    userId      Int
+    Question    Question[]
+psl=}
+
+entity Question {=psl
+    id     Int      @id @default(autoincrement())
+    text   String
+    file   File     @relation(fields: [fileId], references: [id])
+    fileId Int
+    Answer Answer[]
+psl=}
+
+entity Answer {=psl
+    id         Int      @id @default(autoincrement())
+    text       String
+    question   Question @relation(fields: [questionId], references: [id])
+    questionId Int
+psl=}
+
+action uploadFile {
+  fn: import { uploadFile } from "@server/actions.js",
+  entities: [User, File]
+}
+
+action askQuestion {
+  fn: import { askQuestion } from "@server/actions.js",
+  entities: [User, File, Question]
+}
+
+action answerQuestion {
+  fn: import { answerQuestion } from "@server/actions.js",
+  entities: [User, Question, Answer]
+}
+
+query getFile {
+  fn: import { getFile } from "@server/queries.js",
+  entities: [User, File]
+}
+
+query getQuestion {
+  fn: import { getQuestion } from "@server/queries.js",
+  entities: [User, File, Question]
+}
+
+query getAnswer {
+  fn: import { getAnswer } from "@server/queries.js",
+  entities: [User, Question, Answer]
+}
+
+route UploadRoute { path: "/upload", to: UploadPage }
+page UploadPage {
+  component: import { UploadPage } from "@client/pages/Upload.jsx",
+  authRequired: false
+}
+
+route FileRoute { path: "/file/:fileId", to: FilePage }
+page FilePage {
+  component: import { FilePage } from "@client/pages/File.jsx",
+  authRequired: true
+}
+
+route QuestionRoute { path: "/question/:questionId", to: QuestionPage }
+page QuestionPage {
+  component: import { Question } from "@client/pages/Question.jsx",
+  authRequired: true
+}
+
+route HomePageRoute { path: "/", to: HomePage }
+page HomePage {
+  component: import { HomePage } from "@client/pages/Home.jsx",
+  authRequired: true
+}
